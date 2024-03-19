@@ -69,7 +69,7 @@ public class ProductServiceImplementation implements ProductService {
 
     @Override
     public void deleteById(String code) {
-
+        productRepository.deleteById(code);
     }
 
     //-----------------------------------------------//
