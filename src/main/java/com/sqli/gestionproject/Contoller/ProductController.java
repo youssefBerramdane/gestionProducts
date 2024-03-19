@@ -23,6 +23,11 @@ public class ProductController {
         return productService.save(productDto);
     }
 
+    @GetMapping("/{code}")
+    public ProductDto findByCode(@PathVariable String code){
+        return productService.findByCode(code);
+    }
+
     @PutMapping("/{code}")
     public ProductDto update(@PathVariable String code, @RequestBody ProductDto productDto) {
         return productService.update(code, productDto);
