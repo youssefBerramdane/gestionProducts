@@ -1,16 +1,47 @@
 package com.sqli.gestionproject.ServiceImplementation;
 
 import com.sqli.gestionproject.Dto.ProductDto;
+import com.sqli.gestionproject.Entity.Category;
+import com.sqli.gestionproject.Entity.Product;
+import com.sqli.gestionproject.Exception.CategoryNotFoundException;
+import com.sqli.gestionproject.Exception.DuplicateProductCode;
+import com.sqli.gestionproject.Exception.PriceNotPositif;
+import com.sqli.gestionproject.Mapper.MappersDto;
+import com.sqli.gestionproject.Repository.CategoryRepository;
+import com.sqli.gestionproject.Repository.ProductRepository;
 import com.sqli.gestionproject.Service.ProductService;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
+@AllArgsConstructor
 public class ProductServiceImplementation implements ProductService {
+
+    private ProductRepository productRepository;
+    private MappersDto mappers;
+    private CategoryRepository categoryRepository;
     @Override
     public ProductDto save(ProductDto productDto) {
-        return null;
+        String categoryCode=productDto.getCategory().getCode();
+        String productCode=productDto.getCode();
+        double price=productDto.getPrice();
+        if(categoryExist(categoryCode)){
+            if(codeNotExist(productCode)){
+                if(PriceIfPositif(price)){
+                    Product product=mappers.dtoToProduct(productDto);
+                    product.setCategory(findCategoryById(categoryCode));
+                    productRepository.save(mappers.dtoToProduct(productDto));
+                    return mappers.productTodto(product);
+                }
+                throw new PriceNotPositif("Price must be greater than 0");
+            }
+            throw new DuplicateProductCode(String.format("The code %s already exist",productCode));
+        }
+        throw new CategoryNotFoundException(String.format("Category with code %s not found",categoryCode));
+
     }
 
     @Override
@@ -20,7 +51,8 @@ public class ProductServiceImplementation implements ProductService {
 
     @Override
     public List<ProductDto> findAll() {
-        return null;
+
+        return productRepository.findAll().stream().map(mappers::productTodto).collect(Collectors.toList());
     }
 
     @Override
@@ -31,5 +63,22 @@ public class ProductServiceImplementation implements ProductService {
     @Override
     public void deleteById(String code) {
 
+    }
+
+    //-----------------------------------------------//
+    public Category findCategoryById(String categoryCode){
+        return categoryRepository.findById(categoryCode).get();
+    }
+
+    public boolean categoryExist(String categoryCode){
+        return categoryRepository.findById(categoryCode).isPresent();
+    }
+
+    public boolean codeNotExist(String code){
+        return productRepository.findById(code).isEmpty();
+
+    }
+    public boolean PriceIfPositif(double price){
+        return price>0;
     }
 }

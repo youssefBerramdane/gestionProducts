@@ -13,12 +13,14 @@ public class MappersDto {
     public Product dtoToProduct(ProductDto productDto){
         Product product= Product.builder().build();
         BeanUtils.copyProperties(productDto,product);
+        product.setCategory(dtoToCategory(productDto.getCategory()));
         return product;
     }
 
     public ProductDto productTodto(Product product){
         ProductDto productDto= ProductDto.builder().build();
         BeanUtils.copyProperties(product,productDto);
+        productDto.setCategory(categoryToDto(product.getCategory()));
         return productDto;
     }
 
