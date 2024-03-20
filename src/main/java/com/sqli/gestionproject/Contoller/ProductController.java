@@ -19,7 +19,7 @@ public class ProductController {
         return productService.findAll();
     }
     @PostMapping
-    public ProductDto save(@RequestBody ProductDto productDto) {
+    public String save(@RequestBody ProductDto productDto) {
         return productService.save(productDto);
     }
 
@@ -29,12 +29,12 @@ public class ProductController {
     }
 
     @PutMapping("/{code}")
-    public ProductDto update(@PathVariable String code, @RequestBody ProductDto productDto) {
+    public String update(@PathVariable String code, @RequestBody ProductDto productDto) {
         return productService.update(code, productDto);
     }
 
     @DeleteMapping("/{code}")
     public void delete(@PathVariable String code) {
-        productService.deleteById(code);
+        productService.deleteProductByIdIfExist(code);
     }
 }

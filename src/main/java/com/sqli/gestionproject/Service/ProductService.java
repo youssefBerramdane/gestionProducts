@@ -5,13 +5,13 @@ import com.sqli.gestionproject.Dto.ProductDto;
 import java.util.List;
 
 public interface ProductService {
-    ProductDto save(ProductDto productDto);
+    String save(ProductDto productDto);
 
-    ProductDto update(String code, ProductDto productDto);
+    String update(String code, ProductDto productDto);
 
     List<ProductDto> findAll();
 
     ProductDto findByCode(String code);
 
-    void deleteById(String code);
+    void deleteProductByIdIfExist(String code);
 }

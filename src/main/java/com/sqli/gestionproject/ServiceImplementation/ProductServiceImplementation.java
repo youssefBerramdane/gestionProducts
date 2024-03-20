@@ -4,69 +4,86 @@ import com.sqli.gestionproject.Dto.ProductDto;
 import com.sqli.gestionproject.Entity.Product;
 import com.sqli.gestionproject.Exception.ProductNotFoundException;
 import com.sqli.gestionproject.Mapper.MappersDto;
-import com.sqli.gestionproject.Repository.CategoryRepository;
-import com.sqli.gestionproject.Repository.ProductRepository;
 import com.sqli.gestionproject.Service.ProductService;
+import com.sqli.gestionproject.Service.ServiceUtills.ProductServiceDao;
 import com.sqli.gestionproject.Service.ServiceUtills.ServiceChecker;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class ProductServiceImplementation implements ProductService {
 
-    private ProductRepository productRepository;
+    //private ProductRepository productRepository;
     private MappersDto mappers;
-    private CategoryRepository categoryRepository;
+    private ProductServiceDao productOperations;
     private ServiceChecker serviceChecker;
 
     @Override
-    public ProductDto save(ProductDto productDto) {
-        String categoryCode = productDto.getCategory().getCode();
-        String productCode = productDto.getCode();
-        double price = productDto.getPrice();
-        if (serviceChecker.checkProductConditions(productCode, categoryCode, price)) {
-            Product product = productRepository.save(mappers.dtoToProduct(productDto));
-            return mappers.productTodto(product);
-        }
-        return null;
-
+    public String save(ProductDto productDto) {
+        return saveValidateProduct(productDto);
     }
 
     @Override
-    public ProductDto update(String code, ProductDto productDto) {
-        Optional<Product> product = productRepository.findById(code);
-        if (serviceChecker.productExist(product)) {
-            if (serviceChecker.checkProductConditions("", productDto.getCategory().getCode(), productDto.getPrice())) {
-                return mappers.productTodto(productRepository.save(mappers.dtoToProduct(productDto)));
-            }
-
-        }
-        throw new ProductNotFoundException(String.format("Product with id %s not found", code));
-
+    public String update(String code, ProductDto productDto) {
+        return updateValidateProduct(code, productDto);
     }
 
     @Override
     public List<ProductDto> findAll() {
-        return productRepository.findAll().stream().map(mappers::productTodto).collect(Collectors.toList());
+        return productOperations.findAllProducts().stream().map(mappers::productTodto).collect(Collectors.toList());
     }
 
     @Override
     public ProductDto findByCode(String code) {
-        Optional<Product> product = productRepository.findById(code);
-        if (serviceChecker.productExist(product)) {
-            return mappers.productTodto(product.get());
+        if (serviceChecker.isProductPresent(code)) {
+            return mappers.productTodto(productOperations.findProductByCode(code));
         }
         throw new ProductNotFoundException(String.format("Product With id %s not found", code));
     }
 
     @Override
-    public void deleteById(String code) {
-        productRepository.deleteById(code);
+    public void deleteProductByIdIfExist(String code) {
+        if (serviceChecker.isProductPresent(code)) {
+            productOperations.deleteProductById(code);
+        } else {
+            throw new ProductNotFoundException(String.format("Product with id %s not found", code));
+        }
+    }
+
+
+    public String saveValidateProduct(ProductDto productDto) {
+        String categoryCode = productDto.getCategory().getCode();
+        String productCode = productDto.getCode();
+        double price = productDto.getPrice();
+        if (serviceChecker.validateProduct(productCode, categoryCode, price)) {
+            Product product = productOperations.saveProduct(mappers.dtoToProduct(productDto));
+            return product.getCode();
+        }
+        throw new RuntimeException("Invalid product details provided.");
+    }
+
+    public String updateValidateProduct(String code,ProductDto productDto){
+        if(serviceChecker.isProductPresent(code)){
+            if (serviceChecker.validateProduct("anyCode", productDto.getCategory().getCode(), productDto.getPrice())) {
+                Product product=productOperations.findProductByCode(code);
+                return updateProductFields(product,productDto);
+            }
+
+        }
+        throw new ProductNotFoundException(String.format("Product with id %s not found",code));
+
+    }
+
+    public String updateProductFields(Product product,ProductDto productDto){
+        product.setPrice(productDto.getPrice());
+        product.setCategory(mappers.dtoToCategory(productDto.getCategory()));
+        return productOperations.saveProduct(product).getCode();
     }
 
    /* //-----------------------------------------------//
